@@ -106,14 +106,13 @@ export class TrackerService {
     });
   }
 
-  /** targetUserId omitted -- returns screenshots for every tracked employee in the org (Owner excluded, same as the summary views). */
+  /** targetUserId omitted -- returns screenshots for all tracked users in the org. */
   static async getScreenshots(organizationId: string, targetUserId: string | undefined, startDate: Date, endDate: Date) {
-    const ownerIds = targetUserId ? [] : await this.getOwnerUserIds(organizationId);
     return prisma.trackerScreenshot.findMany({
       where: {
         session: {
           organizationId,
-          userId: targetUserId ? targetUserId : { notIn: ownerIds },
+          ...(targetUserId ? { userId: targetUserId } : {}),
         },
         capturedAt: { gte: startDate, lte: endDate },
       },
@@ -154,14 +153,11 @@ export class TrackerService {
   }
 
   static async getEmployeeSummary(organizationId: string, startDate: Date, endDate: Date) {
-    const ownerIds = await this.getOwnerUserIds(organizationId);
-
     const candidates = await prisma.trackerSession.findMany({
       where: {
         organizationId,
         startedAt: { lte: endDate },
         OR: [{ endedAt: null }, { endedAt: { gte: startDate } }],
-        userId: { notIn: ownerIds },
       },
       include: { user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } } },
     });
@@ -292,9 +288,8 @@ export class TrackerService {
    *  session (no endedAt) whose last heartbeat is recent. Heartbeats fire every ~30s, so a 2-minute
    *  window tolerates a couple missed beats before treating a crashed/closed app as offline. */
   static async getOrgTrackingStatus(organizationId: string) {
-    const ownerIds = await this.getOwnerUserIds(organizationId);
     const members = await prisma.organizationMember.findMany({
-      where: { organizationId, userId: { notIn: ownerIds } },
+      where: { organizationId },
       include: { user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } } },
     });
 

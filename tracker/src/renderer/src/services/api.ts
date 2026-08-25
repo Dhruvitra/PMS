@@ -96,11 +96,28 @@ export interface Organization {
   id: string
   name: string
   role: string
+  settings?: {
+    autoBreakMinutes?: number
+    memberAutoBreakOverrides?: Record<string, number>
+    logoUrl?: string
+    [key: string]: any
+  }
+}
+
+export interface UserProfile {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
 }
 
 export interface TaskOption {
   id: string
   title: string
+  status?: string
+  priority?: string
+  list?: { id: string; name: string; space?: { id: string; name: string } }
+  project?: { id: string; name: string }
 }
 
 export interface TrackerSession {
@@ -117,7 +134,12 @@ export interface TrackerSession {
 
 export async function login(email: string, password: string) {
   const res = await api.post('/auth/login', { email, password })
-  return res.data.data as { accessToken: string; refreshToken: string; user: { firstName: string; lastName: string; email: string } }
+  return res.data.data as { accessToken: string; refreshToken: string; user: UserProfile }
+}
+
+export async function getMe(): Promise<UserProfile> {
+  const res = await api.get('/users/me')
+  return res.data.data
 }
 
 export async function getOrganizations(): Promise<Organization[]> {
@@ -125,8 +147,12 @@ export async function getOrganizations(): Promise<Organization[]> {
   return res.data.data
 }
 
-export async function getMyTasks(organizationId: string): Promise<TaskOption[]> {
-  const res = await api.get('/tasks/my', { params: { orgId: organizationId } })
+export async function getMyTasks(organizationId?: string): Promise<TaskOption[]> {
+  const params: Record<string, string> = {}
+  if (organizationId && organizationId !== 'all') {
+    params.orgId = organizationId
+  }
+  const res = await api.get('/tasks/my', { params })
   return res.data.data
 }
 

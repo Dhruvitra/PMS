@@ -89,6 +89,7 @@ export class OrganizationService {
     });
 
     try {
+      await cacheDel(CacheKeys.orgDetails(orgId));
       getIO().to(`org:${orgId}`).emit('org:updated', { organizationId: orgId });
     } catch { }
 

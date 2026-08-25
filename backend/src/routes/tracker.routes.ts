@@ -46,16 +46,16 @@ router.post('/sessions/:id/screenshots', upload.single('screenshot'), controller
 router.get('/sessions/active', controller.getActiveSession);
 router.get('/my-sessions', requireOrgMembership, controller.getMySessions);
 
-// Owner/HR-facing: visibility into the whole team
-router.get('/summary', requireOrgMembership, requireOrgRole(OrgRole.HR), controller.getSummary);
-router.get('/late-today', requireOrgMembership, requireOrgRole(OrgRole.HR), controller.getLateToday);
-router.get('/leaderboard', requireOrgMembership, requireOrgRole(OrgRole.HR), controller.getLeaderboard);
-router.get('/status', requireOrgMembership, requireOrgRole(OrgRole.HR), controller.getTrackingStatus);
-router.get('/screenshots', requireOrgMembership, requireOrgRole(OrgRole.HR), controller.getScreenshots);
+// Owner/HR/Admin-facing: visibility into the whole team
+router.get('/summary', requireOrgMembership, requireOrgRole(OrgRole.HR, OrgRole.ADMIN), controller.getSummary);
+router.get('/late-today', requireOrgMembership, requireOrgRole(OrgRole.HR, OrgRole.ADMIN), controller.getLateToday);
+router.get('/leaderboard', requireOrgMembership, requireOrgRole(OrgRole.HR, OrgRole.ADMIN), controller.getLeaderboard);
+router.get('/status', requireOrgMembership, requireOrgRole(OrgRole.HR, OrgRole.ADMIN), controller.getTrackingStatus);
+router.get('/screenshots', requireOrgMembership, requireOrgRole(OrgRole.HR, OrgRole.ADMIN), controller.getScreenshots);
 // Note: no requireOrgMembership/requireOrgRole here -- those middlewares resolve the
 // org id from req.params.id by default, but :id on this route is the SCREENSHOT id, not
 // an org id. The role+membership check is instead done explicitly inside the controller.
 router.delete('/screenshots/:id', controller.deleteScreenshot);
-router.get('/sessions', requireOrgMembership, requireOrgRole(OrgRole.HR), controller.getUserSessions);
+router.get('/sessions', requireOrgMembership, requireOrgRole(OrgRole.HR, OrgRole.ADMIN), controller.getUserSessions);
 
 export default router;

@@ -239,11 +239,19 @@ export function AttachmentItem({ attachment, onDelete, onPreview, onRename, canE
           <FileTypeIcon mimeType={attachment.mimeType} />
           
           {/* Image sits on top for image attachments */}
-          {attachment.isImage && attachment.thumbnailUrl && (
+          {attachment.isImage && (
             <img
-              src={attachment.thumbnailUrl}
+              src={attachment.thumbnailUrl || imageUrl}
               alt={attachment.originalName}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (attachment.thumbnailUrl && target.src.includes('thumbnail')) {
+                  target.src = imageUrl;
+                } else {
+                  target.style.display = 'none';
+                }
+              }}
             />
           )}
           

@@ -12,24 +12,26 @@ export function WorkspaceSettings() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const currentOrg = useAppSelector(state => state.organization.currentOrg);
-  const { isOwner, isSuperAdmin } = useOrgRole();
+  const { isOwner, isSuperAdmin, isAdmin } = useOrgRole();
   const { success: showSuccess, error: showError } = useToast();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   
   const [name, setName] = useState(currentOrg?.name || '');
   const [logoPreview, setLogoPreview] = useState<string | null>(currentOrg?.settings?.logoUrl || null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [autoBreakMinutes, setAutoBreakMinutes] = useState<number>(currentOrg?.settings?.autoBreakMinutes ?? 10);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const canManage = isOwner || isSuperAdmin;
+  const canManage = isOwner || isSuperAdmin || isAdmin;
   const canDelete = isOwner || isSuperAdmin;
 
   useEffect(() => {
     if (currentOrg) {
       setName(currentOrg.name);
       setLogoPreview(currentOrg.settings?.logoUrl || null);
+      setAutoBreakMinutes(currentOrg.settings?.autoBreakMinutes ?? 10);
     }
   }, [currentOrg]);
 
@@ -63,17 +65,21 @@ export function WorkspaceSettings() {
 
       const res = await api.patch(`/organizations/${currentOrg.id}`, {
         name: name.trim(),
-        settings: { ...currentOrg.settings, logoUrl }
+        settings: {
+          ...currentOrg.settings,
+          logoUrl,
+          autoBreakMinutes: Number(autoBreakMinutes) || 10
+        }
       });
 
       if (res.data.success) {
         dispatch(updateCurrentOrg(res.data.data));
         setSaved(true);
-        showSuccess('Workspace updated successfully');
+        showSuccess('Workspace settings updated successfully');
         setTimeout(() => setSaved(false), 2000);
       }
     } catch {
-      showError('Failed to update workspace');
+      showError('Failed to update workspace settings');
     } finally {
       setSaving(false);
     }
@@ -83,6 +89,7 @@ export function WorkspaceSettings() {
 
   return (
     <div className="space-y-8 animate-fade-in">
+      {/* Workspace Profile Section */}
       <section className="bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
         <div className="p-6 border-b border-gray-50 dark:border-gray-800">
           <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Workspace Profile</h3>
@@ -143,6 +150,81 @@ export function WorkspaceSettings() {
               </button>
             )}
           </div>
+        </div>
+      </section>
+
+      {/* ─── Desktop Tracker & Inactivity Settings (Admin & Super Admin Only) ─── */}
+      <section className="bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div className="p-6 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⏱️</span>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                Desktop Tracker Inactivity Auto-Break
+              </h3>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Set how long employee computers can be inactive (no keyboard/mouse movement) before auto-break starts.
+            </p>
+          </div>
+          <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 uppercase tracking-widest border border-indigo-100 dark:border-indigo-800/50">
+            Super Admin / Admin
+          </span>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div>
+              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                Enter Custom Auto-Break Time (Minutes)
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1 max-w-[180px]">
+                  <input
+                    type="number"
+                    min={1}
+                    max={240}
+                    value={autoBreakMinutes}
+                    onChange={(e) => setAutoBreakMinutes(Number(e.target.value))}
+                    disabled={!canManage}
+                    placeholder="10"
+                    className="w-full pl-4 pr-12 py-2.5 text-sm font-bold bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all disabled:opacity-60"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs font-bold text-gray-400 pointer-events-none">
+                    mins
+                  </span>
+                </div>
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2 ml-1 leading-relaxed">
+                If an employee does not move their keyboard or mouse for <strong className="text-indigo-600 dark:text-indigo-400">{autoBreakMinutes} minutes</strong>, the Desktop Tracker will automatically pause tracking and trigger an Auto Break.
+              </p>
+            </div>
+
+            {/* Explanatory Info Card */}
+            <div className="p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 space-y-2">
+              <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-bold text-xs">
+                <span>💡</span>
+                <span>How This Works</span>
+              </div>
+              <ul className="text-[11px] text-indigo-900/80 dark:text-indigo-300/80 space-y-1.5 list-disc list-inside leading-relaxed">
+                <li>This setting applies to all employees tracking time in this workspace.</li>
+                <li>When the inactivity limit is hit, tracking pauses to preserve timesheet integrity.</li>
+                <li>Employees receive an on-screen prompt with a 1-click button to resume when they return.</li>
+              </ul>
+            </div>
+          </div>
+
+          {canManage && (
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
+              >
+                {saved ? 'Saved!' : saving ? 'Saving...' : 'Save Inactivity Time'}
+              </button>
+            </div>
+          )}
         </div>
       </section>
 

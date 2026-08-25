@@ -6,10 +6,11 @@ import { ProfileSettings } from '../../components/settings/ProfileSettings';
 import { PreferencesSettings } from '../../components/settings/PreferencesSettings';
 import { AccountSettings } from '../../components/settings/AccountSettings';
 import { WorkspaceSettings } from '../../components/settings/WorkspaceSettings';
+import { TrackerSettings } from '../../components/settings/TrackerSettings';
 import api from '../../services/api';
 import { useSocket } from '../../hooks/useSocket';
 
-type SettingsTab = 'profile' | 'preferences' | 'account' | 'team' | 'workspace';
+type SettingsTab = 'profile' | 'preferences' | 'account' | 'team' | 'workspace' | 'tracker';
 
 interface TeamMember {
    id: string;
@@ -65,6 +66,15 @@ const TABS: { key: SettingsTab; label: string; icon: ReactNode }[] = [
       icon: (
          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+         </svg>
+      ),
+   },
+   {
+      key: 'tracker',
+      label: 'Tracker Auto-Break',
+      icon: (
+         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
          </svg>
       ),
    },
@@ -199,6 +209,7 @@ export function SettingsPage() {
                         {activeTab === 'account' && 'Secure your account with two-factor authentication and manage high-level account actions.'}
                         {activeTab === 'team' && 'View your organizational network and monitor real-time presence of your collaborators.'}
                         {activeTab === 'workspace' && 'Administer global workspace identities, URLs, and member access roles.'}
+                        {activeTab === 'tracker' && 'Customize employee desktop tracker inactivity auto-break thresholds for this workspace.'}
                      </p>
                   </div>
 
@@ -208,6 +219,7 @@ export function SettingsPage() {
                      {activeTab === 'preferences' && <PreferencesSettings />}
                      {activeTab === 'account' && <AccountSettings />}
                      {activeTab === 'workspace' && <WorkspaceSettings />}
+                     {activeTab === 'tracker' && <TrackerSettings />}
                      {activeTab === 'team' && (
                   <div>
                      {teamLoading ? (

@@ -25,7 +25,7 @@ async function startServer(port: number): Promise<void> {
 
   // Ensure upload directories exist and are writable
   const uploadsBase = path.resolve(process.cwd(), 'uploads');
-  ['avatars', 'chat', 'thumbnails'].forEach(dir => {
+  ['avatars', 'chat', 'thumbnails', 'screenshots', 'downloads'].forEach(dir => {
     const fullPath = path.join(uploadsBase, dir);
     if (!fs.existsSync(fullPath)) {
       console.log(`[Init] Creating missing directory: ${fullPath}`);

@@ -207,10 +207,11 @@ export class TaskService {
       isDeleted: false,
     };
 
-    if (organizationId) {
+    if (organizationId && organizationId !== 'all' && organizationId !== 'undefined' && organizationId !== 'null') {
       where.OR = [
         { project: { organizationId } },
-        { list: { space: { organizationId } } }
+        { list: { space: { organizationId } } },
+        { list: { folder: { space: { organizationId } } } }
       ];
     }
 
@@ -219,11 +220,12 @@ export class TaskService {
       include: {
         assignees: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
         project: { select: { id: true, name: true } },
+        list: { select: { id: true, name: true, space: { select: { id: true, name: true } } } },
         createdBy: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
         tags: { select: { id: true, name: true, color: true } },
         favoritedBy: { where: { id: userId } }
       },
-      orderBy: [{ status: 'asc' }, { priority: 'desc' }],
+      orderBy: [{ status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
     });
 
     return tasks.map(t => ({

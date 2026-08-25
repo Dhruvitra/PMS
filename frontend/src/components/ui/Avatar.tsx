@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const SIZE_CLASSES: Record<string, string> = {
   xs: 'w-5 h-5 text-[9px]',
   sm: 'w-8 h-8 text-[11px]',
@@ -18,15 +20,17 @@ interface AvatarProps {
 /** Consistent avatar everywhere in the app: real photo if set, otherwise a gradient
  *  circle with initials (first letter of first + last name) -- never a plain flat color. */
 export function Avatar({ firstName, lastName, avatarUrl, size = 'sm', ring = false, className = '' }: AvatarProps) {
+  const [imgFailed, setImgFailed] = useState(false);
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.sm;
   const ringClass = ring ? 'ring-2 ring-white dark:ring-gray-900' : '';
   const initials = `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || '?';
 
-  if (avatarUrl) {
+  if (avatarUrl && !imgFailed) {
     return (
       <img
         src={avatarUrl}
         alt=""
+        onError={() => setImgFailed(true)}
         className={`${sizeClass} rounded-full object-cover shrink-0 ${ringClass} ${className}`}
       />
     );
@@ -34,7 +38,7 @@ export function Avatar({ firstName, lastName, avatarUrl, size = 'sm', ring = fal
 
   return (
     <div
-      className={`${sizeClass} rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold flex items-center justify-center shrink-0 ${ringClass} ${className}`}
+      className={`${sizeClass} rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center shrink-0 ${ringClass} ${className}`}
     >
       {initials}
     </div>

@@ -15,9 +15,20 @@ const trackerApi = {
 
   // Window/tray
   hideWindow: (): void => ipcRenderer.send('window:hide'),
+  showWindow: (): void => ipcRenderer.send('window:show'),
+  restoreWindow: (): void => ipcRenderer.send('window:restore'),
   quitApp: (): void => ipcRenderer.send('app:quit'),
   setTrayStatus: (status: 'active' | 'idle' | 'offline'): void =>
     ipcRenderer.send('tray:set-status', status),
+
+  // Inactivity & Auto-break
+  setTrackingStatus: (isTracking: boolean, autoBreakSeconds: number): void =>
+    ipcRenderer.send('tracking:status', { isTracking, autoBreakSeconds }),
+  onAutoBreak: (callback: (data: { idleSeconds: number }) => void): (() => void) => {
+    const listener = (_e: unknown, data: { idleSeconds: number }): void => callback(data)
+    ipcRenderer.on('tracker:auto-break', listener)
+    return () => ipcRenderer.removeListener('tracker:auto-break', listener)
+  },
 
   // Auto-launch on login
   getAutoLaunch: (): Promise<boolean> => ipcRenderer.invoke('auto-launch:get'),

@@ -44,9 +44,9 @@ router.get('/', controller.getMyOrgs);
 
 // Org-specific routes — require membership
 router.get('/:id', requireOrgMembership, controller.getById);
-router.patch('/:id', requireOrgMembership, requireOrgRole(OrgRole.OWNER, OrgRole.SUPER_ADMIN), controller.update);
+router.patch('/:id', requireOrgMembership, requireOrgRole(OrgRole.OWNER, OrgRole.SUPER_ADMIN, OrgRole.ADMIN), controller.update);
 router.delete('/:id', requireOrgMembership, requireOrgRole(OrgRole.OWNER, OrgRole.SUPER_ADMIN), controller.delete);
-router.post('/:id/logo', requireOrgMembership, requireOrgRole(OrgRole.OWNER, OrgRole.SUPER_ADMIN), logoUpload.single('logo'), controller.uploadLogo);
+router.post('/:id/logo', requireOrgMembership, requireOrgRole(OrgRole.OWNER, OrgRole.SUPER_ADMIN, OrgRole.ADMIN), logoUpload.single('logo'), controller.uploadLogo);
 
 // Member management — OWNER and SUPER_ADMIN only
 router.post('/:id/members', requireOrgMembership, requireOrgRole(OrgRole.OWNER, OrgRole.SUPER_ADMIN), controller.addMember);

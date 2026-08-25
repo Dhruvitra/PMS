@@ -15,8 +15,8 @@ let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let isQuitting = false
 
-const WINDOW_WIDTH = 380
-const WINDOW_HEIGHT = 560
+const WINDOW_WIDTH = 390
+const WINDOW_HEIGHT = 620
 
 function createWindow(): void {
   const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize
@@ -36,7 +36,8 @@ function createWindow(): void {
     icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      backgroundThrottling: false
     }
   })
 
@@ -152,6 +153,30 @@ app.whenReady().then(() => {
 
   // ── Window / tray ────────────────────────────────────────────────
   ipcMain.on('window:hide', () => mainWindow?.hide())
+  ipcMain.on('window:show', () => {
+    mainWindow?.show()
+    mainWindow?.focus()
+  })
+  ipcMain.on('window:restore', () => {
+    if (!mainWindow) return
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore()
+    }
+    mainWindow.setAlwaysOnTop(true)
+    mainWindow.show()
+    mainWindow.focus()
+    mainWindow.flashFrame(true)
+  })
+  ipcMain.on('window:popup', () => {
+    if (!mainWindow) return
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore()
+    }
+    mainWindow.setAlwaysOnTop(true)
+    mainWindow.show()
+    mainWindow.focus()
+    mainWindow.flashFrame(true)
+  })
   ipcMain.on('app:quit', () => {
     isQuitting = true
     app.quit()
@@ -171,6 +196,39 @@ app.whenReady().then(() => {
   ipcMain.on('renderer:log', (_e, level: string, ...args: unknown[]) => {
     console.log(`[renderer:${level}]`, ...args)
   })
+
+  // ── OS-level Inactivity Watcher (Immune to window minimization/throttling) ────
+  const trackingConfig = {
+    isTracking: false,
+    autoBreakSeconds: 600
+  }
+
+  ipcMain.on('tracking:status', (_e, data: { isTracking: boolean; autoBreakSeconds?: number }) => {
+    trackingConfig.isTracking = data.isTracking
+    if (data.autoBreakSeconds && data.autoBreakSeconds > 0) {
+      trackingConfig.autoBreakSeconds = data.autoBreakSeconds
+    }
+    console.log(`[main] Tracking status updated: isTracking=${trackingConfig.isTracking}, autoBreakThreshold=${trackingConfig.autoBreakSeconds}s`)
+  })
+
+  setInterval(() => {
+    if (!trackingConfig.isTracking || !mainWindow) return
+    const idleSec = powerMonitor.getSystemIdleTime()
+    if (idleSec >= trackingConfig.autoBreakSeconds) {
+      console.log(`[main] 🚨 Auto-Break triggered in Main Process! Idle: ${idleSec}s >= ${trackingConfig.autoBreakSeconds}s`)
+      trackingConfig.isTracking = false
+
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore()
+      }
+      mainWindow.setAlwaysOnTop(true)
+      mainWindow.show()
+      mainWindow.focus()
+      mainWindow.flashFrame(true)
+
+      mainWindow.webContents.send('tracker:auto-break', { idleSeconds: idleSec })
+    }
+  }, 1000)
 
   createWindow()
   createTray()
