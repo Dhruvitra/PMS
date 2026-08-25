@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Outer ring - green and gray -->
+  <circle cx="100" cy="100" r="95" fill="none" stroke="#555" stroke-width="14" stroke-dasharray="298.45 298.45" stroke-dashoffset="0" transform="rotate(135 100 100)"/>
+  <circle cx="100" cy="100" r="95" fill="none" stroke="#7CBB00" stroke-width="14" stroke-dasharray="298.45 298.45" stroke-dashoffset="0" transform="rotate(-45 100 100)"/>
+  <!-- White inner circle -->
+  <circle cx="100" cy="100" r="82" fill="white"/>
+  <!-- S shape - green -->
+  <path d="M115 45 C130 45, 140 55, 140 70 C140 90, 120 95, 105 105 C90 115, 75 120, 75 135 C75 150, 85 160, 100 160"
+        fill="none" stroke="#7CBB00" stroke-width="18" stroke-linecap="round"/>
+  <!-- S shape - dark shadow -->
+  <path d="M105 50 C90 55, 80 70, 80 85 C80 100, 95 110, 110 120 C125 130, 135 140, 130 155"
+        fill="none" stroke="#555" stroke-width="12" stroke-linecap="round" opacity="0.6"/>
+</svg>

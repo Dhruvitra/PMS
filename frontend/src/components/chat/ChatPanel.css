@@ -1,0 +1,183 @@
+.avatar-bg-0 { background-color: #f31260; }
+.avatar-bg-1 { background-color: #0070f3; }
+.avatar-bg-2 { background-color: #17c964; }
+.avatar-bg-3 { background-color: #9333ea; }
+.avatar-bg-4 { background-color: #f5a623; }
+.avatar-bg-5 { background-color: #eb00ff; }
+.avatar-bg-me { background-color: #6366f1; }
+
+.avatar-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.avatar-content {
+    position: relative;
+    z-index: 10;
+}
+
+/* WhatsApp bubble tails */
+.bubble-tail-right {
+  position: absolute;
+  top: 0;
+  right: -8px;
+  width: 8px;
+  height: 13px;
+}
+.bubble-tail-right::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 8px solid #d9fdd3;
+  border-bottom: 8px solid transparent;
+}
+.dark .bubble-tail-right::before {
+  border-left-color: #005c4b;
+}
+
+.bubble-tail-left {
+  position: absolute;
+  top: 0;
+  left: -8px;
+  width: 8px;
+  height: 13px;
+}
+.bubble-tail-left::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-right: 8px solid #ffffff;
+  border-bottom: 8px solid transparent;
+}
+.dark .bubble-tail-left::before {
+  border-right-color: #202c33;
+}
+
+/* WhatsApp authentic doodle background pattern */
+.wa-chat-bg {
+  background-color: #efeae2;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300' fill='none' stroke='%23000000' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.055'%3E%3Cpath d='M25 40a12 12 0 0 1 12-12h20a12 12 0 0 1 12 12v10a12 12 0 0 1-12 12h-8l-8 7v-7h-4a12 12 0 0 1-12-12z'/%3E%3Cpath d='M120 35c-3-6-10-6-13 0-3 6 1 12 13 18 12-6 16-12 13-18-3-6-10-6-13 0z'/%3E%3Crect x='180' y='28' width='30' height='22' rx='4'/%3E%3Ccircle cx='195' cy='39' r='6'/%3E%3Cpath d='M190 28v-3h10v3'/%3E%3Cpolygon points='260,25 264,35 275,36 267,44 269,55 260,50 251,55 253,44 245,36 256,35'/%3E%3Cpath d='M35 115h20a4 4 0 0 1 4 4v10a10 10 0 0 1-10 10h-4a10 10 0 0 1-10-10v-10a4 4 0 0 1 4-4z'/%3E%3Cpath d='M59 120h4a4 4 0 0 1 0 8h-4'/%3E%3Cline x1='30' y1='143' x2='60' y2='143'/%3E%3Cpolygon points='115,110 145,125 115,140 122,125'/%3E%3Cpath d='M195 135a5 5 0 1 1-5-5h15v-18l12-3v18a5 5 0 1 1-5-5'/%3E%3Ccircle cx='265' cy='125' r='14'/%3E%3Cpolyline points='265,117 265,125 272,125'/%3E%3Ccircle cx='45' cy='210' r='15'/%3E%3Ccircle cx='40' cy='206' r='1' fill='%23000000'/%3E%3Ccircle cx='50' cy='206' r='1' fill='%23000000'/%3E%3Cpath d='M39 216a7 7 0 0 0 12 0'/%3E%3Cpath d='M110 215a15 15 0 0 1 30 0v8a4 4 0 0 1-4 4h-2v-12h6'/%3E%3Cpath d='M110 227h-2a4 4 0 0 1-4-4v-8'/%3E%3Ccircle cx='195' cy='210' r='10'/%3E%3Cline x1='202' y1='217' x2='215' y2='230'/%3E%3Cpath d='M260 200a8 8 0 0 1 8 8v6l3 3h-22l3-3v-6a8 8 0 0 1 8-8z'/%3E%3Cpath d='M258 220a3 3 0 0 0 4 0'/%3E%3Crect x='80' y='265' width='22' height='18' rx='2'/%3E%3Cline x1='91' y1='265' x2='91' y2='283'/%3E%3Cline x1='80' y1='273' x2='102' y2='273'/%3E%3Cpath d='M215 275a8 8 0 0 1 15-3 6 6 0 0 1 9 5 5 5 0 0 1-2 10h-21a5 5 0 0 1-1-12z'/%3E%3C/svg%3E");
+  background-size: 360px 360px;
+}
+.dark .wa-chat-bg {
+  background-color: #0b141a;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300' fill='none' stroke='%23ffffff' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.04'%3E%3Cpath d='M25 40a12 12 0 0 1 12-12h20a12 12 0 0 1 12 12v10a12 12 0 0 1-12 12h-8l-8 7v-7h-4a12 12 0 0 1-12-12z'/%3E%3Cpath d='M120 35c-3-6-10-6-13 0-3 6 1 12 13 18 12-6 16-12 13-18-3-6-10-6-13 0z'/%3E%3Crect x='180' y='28' width='30' height='22' rx='4'/%3E%3Ccircle cx='195' cy='39' r='6'/%3E%3Cpath d='M190 28v-3h10v3'/%3E%3Cpolygon points='260,25 264,35 275,36 267,44 269,55 260,50 251,55 253,44 245,36 256,35'/%3E%3Cpath d='M35 115h20a4 4 0 0 1 4 4v10a10 10 0 0 1-10 10h-4a10 10 0 0 1-10-10v-10a4 4 0 0 1 4-4z'/%3E%3Cpath d='M59 120h4a4 4 0 0 1 0 8h-4'/%3E%3Cline x1='30' y1='143' x2='60' y2='143'/%3E%3Cpolygon points='115,110 145,125 115,140 122,125'/%3E%3Cpath d='M195 135a5 5 0 1 1-5-5h15v-18l12-3v18a5 5 0 1 1-5-5'/%3E%3Ccircle cx='265' cy='125' r='14'/%3E%3Cpolyline points='265,117 265,125 272,125'/%3E%3Ccircle cx='45' cy='210' r='15'/%3E%3Ccircle cx='40' cy='206' r='1' fill='%23ffffff'/%3E%3Ccircle cx='50' cy='206' r='1' fill='%23ffffff'/%3E%3Cpath d='M39 216a7 7 0 0 0 12 0'/%3E%3Cpath d='M110 215a15 15 0 0 1 30 0v8a4 4 0 0 1-4 4h-2v-12h6'/%3E%3Cpath d='M110 227h-2a4 4 0 0 1-4-4v-8'/%3E%3Ccircle cx='195' cy='210' r='10'/%3E%3Cline x1='202' y1='217' x2='215' y2='230'/%3E%3Cpath d='M260 200a8 8 0 0 1 8 8v6l3 3h-22l3-3v-6a8 8 0 0 1 8-8z'/%3E%3Cpath d='M258 220a3 3 0 0 0 4 0'/%3E%3Crect x='80' y='265' width='22' height='18' rx='2'/%3E%3Cline x1='91' y1='265' x2='91' y2='283'/%3E%3Cline x1='80' y1='273' x2='102' y2='273'/%3E%3Cpath d='M215 275a8 8 0 0 1 15-3 6 6 0 0 1 9 5 5 5 0 0 1-2 10h-21a5 5 0 0 1-1-12z'/%3E%3C/svg%3E");
+  background-size: 360px 360px;
+}
+
+/* Typing dots animation */
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+.typing-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #8696a0;
+  display: inline-block;
+  animation: typingBounce 1.4s ease-in-out infinite;
+}
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Scrollbar for chat */
+.wa-scrollbar::-webkit-scrollbar { width: 6px; }
+.wa-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.wa-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.dark .wa-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
+
+/* ═══ Rich Input Bar ═══ */
+.chat-toolbar-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #54656f;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+.chat-toolbar-btn:hover {
+  background: #f0f2f5;
+  color: #111b21;
+}
+.dark .chat-toolbar-btn {
+  color: #8696a0;
+}
+.dark .chat-toolbar-btn:hover {
+  background: #374248;
+  color: #e9edef;
+}
+.chat-toolbar-btn-active {
+  background: #e9edef;
+  color: #00a884;
+}
+.dark .chat-toolbar-btn-active {
+  background: #374248;
+  color: #00a884;
+}
+
+/* Rich editor placeholder & styling */
+.chat-rich-editor {
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+.chat-rich-editor:focus {
+  outline: none;
+}
+.chat-rich-editor blockquote {
+  border-left: 3px solid #ccc;
+  padding-left: 10px;
+  margin: 4px 0;
+  color: #666;
+}
+.dark .chat-rich-editor blockquote {
+  border-left-color: #555;
+  color: #aaa;
+}
+.chat-rich-editor code {
+  background: #f1f1f1;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 13px;
+}
+.dark .chat-rich-editor code {
+  background: #333;
+}
+.chat-rich-editor pre {
+  background: #f1f1f1;
+  padding: 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  margin: 4px 0;
+}
+.dark .chat-rich-editor pre {
+  background: #2a2a2a;
+}
+.chat-rich-editor ul, .chat-rich-editor ol {
+  padding-left: 20px;
+  margin: 2px 0;
+}
+.chat-rich-editor a {
+  color: #1264a3;
+  text-decoration: underline;
+}
+.dark .chat-rich-editor a {
+  color: #1d9bd1;
+}

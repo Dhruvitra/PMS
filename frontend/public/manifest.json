@@ -1,0 +1,31 @@
+{
+  "name": "Producteev Pro",
+  "short_name": "Producteev",
+  "description": "Producteev - Professional Project Management System. Plan, track, and collaborate with your team in one powerful workspace.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0F172A",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/tab-icon.png",
+      "sizes": "146x146",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

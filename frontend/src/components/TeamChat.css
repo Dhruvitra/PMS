@@ -1,0 +1,20 @@
+.team-chat-container {
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.25);
+}
+
+.team-chat-video-preview {
+    max-height: 120px;
+}
+
+.team-chat-image-msg {
+    max-height: 200px;
+}
+
+.avatar-bg-0 { background-color: #7c3aed; }
+.avatar-bg-1 { background-color: #2563eb; }
+.avatar-bg-2 { background-color: #059669; }
+.avatar-bg-3 { background-color: #d97706; }
+.avatar-bg-4 { background-color: #e11d48; }
+.avatar-bg-5 { background-color: #0891b2; }
+.avatar-bg-6 { background-color: #4f46e5; }
+.avatar-bg-7 { background-color: #db2777; }

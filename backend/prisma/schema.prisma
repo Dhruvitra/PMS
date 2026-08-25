@@ -1,0 +1,782 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String               @id @default(uuid())
+  email                   String               @unique
+  passwordHash            String               @map("password_hash")
+  firstName               String               @map("first_name")
+  lastName                String               @map("last_name")
+  avatarUrl               String?              @map("avatar_url")
+  createdAt               DateTime             @default(now()) @map("created_at")
+  updatedAt               DateTime             @updatedAt @map("updated_at")
+  mobileNo                String?              @map("mobile_no")
+  technology              String?
+  settings                Json                 @default("{}")
+  // Cross-tenant platform operator, not a per-org role -- distinct from OrgRole.SUPER_ADMIN
+  // (which only grants elevated access within a single organization). Grants access to
+  // /platform-admin: every company, approve/reject/suspend, storage overview, server health.
+  isPlatformAdmin         Boolean              @default(false) @map("is_platform_admin")
+  activities              Activity[]           @relation("userActivities")
+  attachmentsUploaded     Attachment[]         @relation("attachmentsUploaded")
+  comments                Comment[]            @relation("userComments")
+  folderMemberships       FolderMember[]
+  invitationsSent         Invitation[]         @relation("invitations_sent")
+  listMemberships         ListMember[]
+  messagesReceived        Message[]            @relation("messagesReceived")
+  messagesSent            Message[]            @relation("messagesSent")
+  notifications           Notification[]       @relation("userNotifications")
+  organizationMemberships OrganizationMember[]
+  projectsCreated         Project[]            @relation("projectsCreated")
+  spaceMemberships        SpaceMember[]
+  spacesCreated           Space[]              @relation("spacesCreated")
+  tasksCreated            Task[]               @relation("tasksCreated")
+  timeEntries             TimeEntry[]          @relation("userTimeEntries")
+  trackerSessions         TrackerSession[]     @relation("userTrackerSessions")
+  salaries                EmployeeSalary[]     @relation("userSalaries")
+  attendanceOverrides     AttendanceOverride[] @relation("userAttendanceOverrides")
+  attendanceOverridesMade AttendanceOverride[] @relation("attendanceOverridesCreated")
+  payrollRunsFinalized    PayrollRun[]         @relation("payrollRunsFinalized")
+  payrollRecords          PayrollRecord[]      @relation("userPayrollRecords")
+  assignedTasks           Task[]               @relation("TaskAssignees")
+  favoriteTasks           Task[]               @relation("TaskFavorites")
+  deletedTasks            Task[]               @relation("TaskDeletedBy")
+  deletedFolders          Folder[]             @relation("FolderDeletedBy")
+  deletedLists            List[]               @relation("ListDeletedBy")
+  deletedProjects         Project[]            @relation("ProjectDeletedBy")
+  deletedAttachments      Attachment[]         @relation("AttachmentDeletedBy")
+  deletedSpaces           Space[]              @relation("SpaceDeletedBy")
+
+  @@map("users")
+}
+
+model Organization {
+  id          String               @id @default(uuid())
+  name        String
+  slug        String               @unique
+  settings    Json                 @default("{}")
+  // Defaults to ACTIVE so every organization that existed before this column was added (and any
+  // created outside the public signup flow) is unaffected. Only the public company-signup path
+  // explicitly sets PENDING_PAYMENT.
+  status      OrganizationStatus   @default(ACTIVE)
+  // Nullable -- null means unlimited/internal (not boxed into a paid plan). Existing orgs and any
+  // manually-added/comped org default to this. Only companies going through paid signup get a
+  // real planId.
+  planId      String?              @map("plan_id")
+  plan        Plan?                @relation(fields: [planId], references: [id])
+  // Purely a record-keeping note for the platform admin -- e.g. "beta partner", "friend of the
+  // business" -- set when Grant Free Access is used on an org with planId already null, so a
+  // year from now it's clear *why* that org has no plan attached instead of just blank.
+  freeAccessNote String?           @map("free_access_note")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  invitations Invitation[]
+  members     OrganizationMember[]
+  notifications Notification[]
+  projects    Project[]
+  spaces      Space[]
+  tags        Tag[]
+  trackerSessions TrackerSession[]
+  payrollSettings PayrollSettings?
+  holidays        Holiday[]
+  employeeSalaries    EmployeeSalary[]
+  attendanceOverrides AttendanceOverride[]
+  payrollRuns         PayrollRun[]
+  payments            Payment[]
+
+  @@map("organizations")
+}
+
+/// One row per Razorpay order created for a company's plan checkout -- both the initial
+/// signup payment and any future plan-upgrade payment reuse this same model. Status starts
+/// CREATED (order created, checkout opened), becomes PAID once the payment signature is
+/// verified (org flips to ACTIVE at that point), or FAILED if the payment attempt didn't
+/// complete. Kept even for FAILED/abandoned attempts as a record, not just successful ones.
+model Payment {
+  id                String        @id @default(uuid())
+  organizationId    String        @map("organization_id")
+  organization      Organization  @relation(fields: [organizationId], references: [id])
+  planId            String        @map("plan_id")
+  plan              Plan          @relation(fields: [planId], references: [id])
+  amountInPaise     Int           @map("amount_in_paise")
+  status            PaymentStatus @default(CREATED)
+  razorpayOrderId   String        @unique @map("razorpay_order_id")
+  razorpayPaymentId String?       @map("razorpay_payment_id")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  CREATED
+  PAID
+  FAILED
+}
+
+enum OrganizationStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+model Plan {
+  id              String         @id @default(uuid())
+  name            String         @unique
+  priceInPaise    Int            @map("price_in_paise")
+  storageLimitGB  Int            @map("storage_limit_gb")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  organizations   Organization[]
+  payments        Payment[]
+
+  @@map("plans")
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  userId         String       @map("user_id")
+  role           OrgRole      @default(MEMBER)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("organization_members")
+}
+
+model Space {
+  id             String        @id @default(uuid())
+  name           String
+  description    String?
+  color          String        @default("#3B82F6")
+  icon           String?
+  position       Int           @default(0)
+  organizationId String        @map("organization_id")
+  createdById    String        @map("created_by_id")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  folders        Folder[]
+  lists          List[]
+  projects       Project[]
+  members        SpaceMember[]
+  createdBy      User          @relation("spacesCreated", fields: [createdById], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  isDeleted      Boolean       @default(false) @map("is_deleted")
+  deletedAt      DateTime?     @map("deleted_at")
+  deletedById    String?       @map("deleted_by_id")
+  deletedBy      User?         @relation("SpaceDeletedBy", fields: [deletedById], references: [id])
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([organizationId, position])
+  @@map("spaces")
+}
+
+model SpaceMember {
+  id        String       @id @default(uuid())
+  spaceId   String       @map("space_id")
+  userId    String       @map("user_id")
+  createdAt DateTime     @default(now()) @map("created_at")
+  role      ResourceRole @default(MEMBER)
+  space     Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, userId])
+  @@index([userId])
+  @@map("space_members")
+}
+
+model Folder {
+  id        String         @id @default(uuid())
+  name      String
+  color     String?
+  position  Int            @default(0)
+  spaceId   String         @map("space_id")
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+  members   FolderMember[]
+  space     Space          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  lists     List[]
+  
+  isDeleted Boolean        @default(false) @map("is_deleted")
+  deletedAt DateTime?      @map("deleted_at")
+  deletedById String?      @map("deleted_by_id")
+  deletedBy   User?        @relation("FolderDeletedBy", fields: [deletedById], references: [id])
+
+  @@index([spaceId])
+  @@index([spaceId, position])
+  @@map("folders")
+}
+
+model List {
+  id          String       @id @default(uuid())
+  name        String
+  color       String?
+  position    Int          @default(0)
+  defaultView String       @default("list") @map("default_view")
+  spaceId     String       @map("space_id")
+  folderId    String?      @map("folder_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  members     ListMember[]
+  folder      Folder?      @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  space       Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  statuses    Status[]
+  tasks       Task[]
+
+  isDeleted   Boolean      @default(false) @map("is_deleted")
+  deletedAt   DateTime?    @map("deleted_at")
+  deletedById String?      @map("deleted_by_id")
+  deletedBy   User?        @relation("ListDeletedBy", fields: [deletedById], references: [id])
+
+  @@index([spaceId])
+  @@index([folderId])
+  @@index([spaceId, position])
+  @@map("lists")
+}
+
+model Status {
+  id       String     @id @default(uuid())
+  name     String
+  color    String     @default("#d1d5db")
+  type     StatusType @default(OPEN)
+  position Int        @default(0)
+  listId   String     @map("list_id")
+  list     List       @relation(fields: [listId], references: [id], onDelete: Cascade)
+  tasks    Task[]     @relation("taskStatus")
+
+  @@index([listId])
+  @@index([listId, position])
+  @@map("statuses")
+}
+
+model Project {
+  id             String        @id @default(uuid())
+  name           String
+  description    String?
+  status         ProjectStatus @default(ACTIVE)
+  organizationId String        @map("organization_id")
+  createdById    String        @map("created_by_id")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  spaceId        String?       @map("space_id")
+  createdBy      User          @relation("projectsCreated", fields: [createdById], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  space          Space?        @relation(fields: [spaceId], references: [id])
+  tasks          Task[]
+
+  isDeleted      Boolean       @default(false) @map("is_deleted")
+  deletedAt      DateTime?     @map("deleted_at")
+  deletedById    String?       @map("deleted_by_id")
+  deletedBy      User?         @relation("ProjectDeletedBy", fields: [deletedById], references: [id])
+
+  @@index([organizationId])
+  @@index([spaceId])
+  @@index([createdById])
+  @@map("projects")
+}
+
+model Task {
+  id           String       @id @default(uuid())
+  title        String
+  description  String?
+  status       TaskStatus   @default(OPEN)
+  priority     TaskPriority @default(LOW)
+  startDate    DateTime?    @map("start_date")
+  dueDate      DateTime?    @map("due_date")
+  timeEstimate String?      @map("time_estimate")
+  projectId    String?      @map("project_id")
+  createdById  String       @map("created_by_id")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  position     Int          @default(0)
+  listId       String?      @map("list_id")
+  statusId     String?      @map("status_id")
+  parentTaskId String?      @map("parent_task_id")
+  attachments  Attachment[]
+  comments     Comment[]
+  createdBy    User         @relation("tasksCreated", fields: [createdById], references: [id])
+  list         List?        @relation(fields: [listId], references: [id])
+  parentTask   Task?        @relation("subtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks     Task[]       @relation("subtasks")
+  project      Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskStatus   Status?      @relation("taskStatus", fields: [statusId], references: [id])
+  timeEntries  TimeEntry[]
+  trackerSessions TrackerSession[]
+  assignees    User[]       @relation("TaskAssignees")
+  tags         Tag[]        @relation("TaskTags")
+  favoritedBy  User[]       @relation("TaskFavorites")
+
+  isDeleted    Boolean      @default(false) @map("is_deleted")
+  deletedAt    DateTime?    @map("deleted_at")
+  deletedById  String?      @map("deleted_by_id")
+  deletedBy    User?        @relation("TaskDeletedBy", fields: [deletedById], references: [id])
+
+  @@index([projectId])
+  @@index([listId])
+  @@index([statusId])
+  @@index([parentTaskId])
+  @@index([createdById])
+  @@index([status])
+  @@index([listId, position])
+  @@map("tasks")
+}
+
+
+
+model Attachment {
+  id           String   @id @default(uuid())
+  filename     String
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  size         Int
+  taskId       String   @map("task_id")
+  uploadedById String   @map("uploaded_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy   User     @relation("attachmentsUploaded", fields: [uploadedById], references: [id])
+
+  isDeleted    Boolean  @default(false) @map("is_deleted")
+  deletedAt    DateTime? @map("deleted_at")
+  deletedById  String?   @map("deleted_by_id")
+  deletedBy    User?     @relation("AttachmentDeletedBy", fields: [deletedById], references: [id])
+
+  @@index([taskId])
+  @@index([uploadedById])
+  @@map("attachments")
+}
+
+model Message {
+  id         String    @id @default(uuid())
+  text       String?
+  imageUrl   String?   @map("image_url")
+  fileUrl    String?   @map("file_url")
+  fileType   String?   @map("file_type")
+  fileName   String?   @map("file_name")
+  fileSize   Int?      @map("file_size")
+  senderId   String    @map("sender_id")
+  receiverId String    @map("receiver_id")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  readAt     DateTime? @map("read_at")
+  receiver   User      @relation("messagesReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User      @relation("messagesSent", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId])
+  @@index([receiverId, senderId])
+  @@index([createdAt])
+  @@index([receiverId, readAt])
+  @@map("messages")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  userId    String   @map("user_id")
+  text      String?  
+  imageUrl  String?  @map("image_url")
+  fileUrl   String?  @map("file_url")
+  fileType  String?  @map("file_type")
+  fileName  String?  @map("file_name")
+  fileSize  Int?     @map("file_size")
+  /// Additional files on the same comment (same send); first file stays in fileUrl/fileName/...
+  attachments Json?  @map("attachments")
+  createdAt DateTime @default(now()) @map("created_at")
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation("userComments", fields: [userId], references: [id], onDelete: Cascade)
+  mentions  String[] @default([])
+  isPrivate Boolean  @default(false) @map("is_private")
+
+  @@index([taskId])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Activity {
+  id         String   @id @default(uuid())
+  orgId      String?  @map("org_id")
+  userId     String   @map("user_id")
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  action     String
+  changes    Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User     @relation("userActivities", fields: [userId], references: [id], onDelete: Cascade)
+  mentions   String[] @default([])
+  isPrivate  Boolean  @default(false) @map("is_private")
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([orgId])
+  @@index([createdAt])
+  @@map("activities")
+}
+
+model TimeEntry {
+  id              String    @id @default(uuid())
+  taskId          String    @map("task_id")
+  userId          String    @map("user_id")
+  startTime       DateTime? @map("start_time")
+  endTime         DateTime? @map("end_time")
+  durationSeconds Int       @default(0) @map("duration_seconds")
+  description     String?
+  isBillable      Boolean   @default(false) @map("is_billable")
+  source          TimeEntrySource @default(MANUAL)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  task            Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user            User      @relation("userTimeEntries", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([userId])
+  @@index([userId, endTime])
+  @@map("time_entries")
+}
+
+model TrackerSession {
+  id              String     @id @default(uuid())
+  organizationId  String     @map("organization_id")
+  userId          String     @map("user_id")
+  taskId          String?    @map("task_id")
+  workMode        WorkMode   @default(WFO) @map("work_mode")
+  startedAt       DateTime   @default(now()) @map("started_at")
+  endedAt         DateTime?  @map("ended_at")
+  lastHeartbeatAt DateTime   @default(now()) @map("last_heartbeat_at")
+  activeSeconds   Int        @default(0) @map("active_seconds")
+  idleSeconds     Int        @default(0) @map("idle_seconds")
+  /// Of activeSeconds, how many had real mouse/keyboard input in that exact second
+  /// (vs. just "not idle for 5+ minutes"). Powers the "% Active Seconds" metric.
+  inputActiveSeconds Int     @default(0) @map("input_active_seconds")
+  createdAt       DateTime   @default(now()) @map("created_at")
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User                 @relation("userTrackerSessions", fields: [userId], references: [id], onDelete: Cascade)
+  task         Task?                @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  screenshots  TrackerScreenshot[]
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([userId, startedAt])
+  @@map("tracker_sessions")
+}
+
+model TrackerScreenshot {
+  id         String   @id @default(uuid())
+  sessionId  String   @map("session_id")
+  imageUrl   String   @map("image_url")
+  capturedAt DateTime @default(now()) @map("captured_at")
+
+  session TrackerSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([capturedAt])
+  @@map("tracker_screenshots")
+}
+
+/// One row per organization. Defines that org's own work-week + Saturday policy so payroll
+/// day-classification is fully tenant-configurable instead of hardcoded to any one company's rules.
+model PayrollSettings {
+  id             String       @id @default(uuid())
+  organizationId String       @unique @map("organization_id")
+  /// Weekdays that are always off, 0=Sunday..6=Saturday. e.g. [0] for "Sunday only".
+  weeklyOffDays  Int[]        @default([0]) @map("weekly_off_days")
+  saturdayRule   SaturdayRule @default(ALL_OFF) @map("saturday_rule")
+  /// Only read when saturdayRule = CUSTOM. Which Saturday-of-month occurrences are WORKING.
+  /// Positive counts from the start of the month (1 = first Saturday), negative from the end
+  /// (-1 = last Saturday, -2 = second-to-last). e.g. [-1, -2] = "last 2 Saturdays working".
+  saturdayWorkingOccurrences Int[]   @default([]) @map("saturday_working_occurrences")
+  dayRateMode    DayRateMode  @default(FIXED_30) @map("day_rate_mode")
+  /// DAYS: pay based on present/absent day counts (default). HOURS: pay proportional to actual
+  /// tracked hours vs. an expected total (working days x standardHoursPerDay).
+  attendanceMode      AttendanceMode @default(DAYS) @map("attendance_mode")
+  standardHoursPerDay Int            @default(8) @map("standard_hours_per_day")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("payroll_settings")
+}
+
+model Holiday {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  date           DateTime @db.Date
+  name           String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, date])
+  @@index([organizationId])
+  @@map("holidays")
+}
+
+/// Salary is versioned by effectiveFrom rather than mutated in place, so past payroll runs
+/// keep computing correctly against whatever salary was in effect at the time.
+model EmployeeSalary {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  userId         String   @map("user_id")
+  monthlyAmount  Decimal  @map("monthly_amount") @db.Decimal(12, 2)
+  effectiveFrom  DateTime @db.Date @map("effective_from")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation("userSalaries", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId, effectiveFrom])
+  @@map("employee_salaries")
+}
+
+/// HR's manual escape hatch: overrides the auto-computed attendance status for one employee on
+/// one date (e.g. tracker wasn't started but they were actually working, or a verbally-approved
+/// leave). Read before the rule engine when a payroll run is computed.
+model AttendanceOverride {
+  id             String           @id @default(uuid())
+  organizationId String           @map("organization_id")
+  userId         String           @map("user_id")
+  date           DateTime         @db.Date
+  status         AttendanceStatus
+  note           String?
+  createdById    String           @map("created_by_id")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation("userAttendanceOverrides", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("attendanceOverridesCreated", fields: [createdById], references: [id])
+
+  @@unique([userId, date])
+  @@index([organizationId])
+  @@map("attendance_overrides")
+}
+
+model PayrollRun {
+  id             String           @id @default(uuid())
+  organizationId String           @map("organization_id")
+  /// First day of the payroll month, e.g. 2026-08-01.
+  month          DateTime         @db.Date
+  status         PayrollRunStatus @default(DRAFT)
+  finalizedAt    DateTime?        @map("finalized_at")
+  finalizedById  String?          @map("finalized_by_id")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  finalizedBy  User?           @relation("payrollRunsFinalized", fields: [finalizedById], references: [id])
+  records      PayrollRecord[]
+
+  @@unique([organizationId, month])
+  @@map("payroll_runs")
+}
+
+model PayrollRecord {
+  id            String   @id @default(uuid())
+  payrollRunId  String   @map("payroll_run_id")
+  userId        String   @map("user_id")
+  workingDays   Int      @map("working_days")
+  presentDays   Int      @map("present_days")
+  absentDays    Int      @map("absent_days")
+  offDays       Int      @map("off_days")
+  holidayDays   Int      @map("holiday_days")
+  paidLeaveDays Int      @default(0) @map("paid_leave_days")
+  /// Only meaningful when the org's attendanceMode was HOURS at finalize time; 0 in DAYS mode.
+  targetHours   Decimal  @default(0) @map("target_hours") @db.Decimal(8, 2)
+  actualHours   Decimal  @default(0) @map("actual_hours") @db.Decimal(8, 2)
+  perDayRate    Decimal  @map("per_day_rate") @db.Decimal(12, 2)
+  grossSalary   Decimal  @map("gross_salary") @db.Decimal(12, 2)
+  deductions    Decimal  @default(0) @db.Decimal(12, 2)
+  bonus         Decimal  @default(0) @db.Decimal(12, 2)
+  netPayable    Decimal  @map("net_payable") @db.Decimal(12, 2)
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  user       User       @relation("userPayrollRecords", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([payrollRunId, userId])
+  @@index([userId])
+  @@map("payroll_records")
+}
+
+model Notification {
+  id             String        @id @default(uuid())
+  userId         String        @map("user_id")
+  organizationId String?       @map("organization_id")
+  title          String
+  message        String
+  isRead         Boolean       @default(false) @map("is_read")
+  link           String?
+  senderAvatarUrl String?      @map("sender_avatar_url")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  user           User          @relation("userNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Invitation {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  email          String
+  role           OrgRole      @default(MEMBER)
+  token          String       @unique @default(uuid())
+  expiresAt      DateTime     @map("expires_at")
+  usedAt         DateTime?    @map("used_at")
+  invitedById    String       @map("invited_by_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  invitedBy      User         @relation("invitations_sent", fields: [invitedById], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([email])
+  @@index([organizationId])
+  @@map("invitations")
+}
+
+model Tag {
+  id             String       @id @default(uuid())
+  name           String
+  color          String       @default("#D1D5DB")
+  organizationId String       @map("organization_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tasks          Task[]       @relation("TaskTags")
+
+  @@unique([organizationId, name])
+  @@map("tags")
+}
+
+model FolderMember {
+  id        String       @id @default(uuid())
+  folderId  String       @map("folder_id")
+  userId    String       @map("user_id")
+  createdAt DateTime     @default(now()) @map("created_at")
+  role      ResourceRole @default(MEMBER)
+  folder    Folder       @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, userId])
+  @@index([userId])
+  @@map("folder_members")
+}
+
+model ListMember {
+  id        String       @id @default(uuid())
+  listId    String       @map("list_id")
+  userId    String       @map("user_id")
+  createdAt DateTime     @default(now()) @map("created_at")
+  role      ResourceRole @default(MEMBER)
+  list      List         @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
+  @@index([userId])
+  @@map("list_members")
+}
+
+enum OrgRole {
+  OWNER
+  SUPER_ADMIN
+  ADMIN
+  MEMBER
+  GUEST
+  LIMITED_MEMBER
+  HR
+}
+
+enum TimeEntrySource {
+  MANUAL
+  DESKTOP_APP
+}
+
+enum WorkMode {
+  WFO
+  WFH
+}
+
+enum SaturdayRule {
+  ALL_OFF
+  ALL_WORKING
+  CUSTOM
+}
+
+enum DayRateMode {
+  FIXED_30
+  ACTUAL_WORKING_DAYS
+}
+
+enum AttendanceMode {
+  DAYS
+  HOURS
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  WEEKLY_OFF
+  HOLIDAY
+  PAID_LEAVE
+  UNPAID_LEAVE
+}
+
+enum PayrollRunStatus {
+  DRAFT
+  FINALIZED
+}
+
+enum StatusType {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+  COMPLETED
+}
+
+enum TaskStatus {
+  OPEN
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  IN_REVIEW
+  ACCEPTED
+  REJECTED
+  CLOSED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ResourceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
